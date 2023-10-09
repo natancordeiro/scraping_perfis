@@ -5,14 +5,28 @@ O objetivo deste código é simplificar a legibilidade do código, visto que mui
 """
 import os
 
+CREDENCIAIS = {
+    'email_facebook': 'rafaelamesmo@icloud.com',
+    'senha_facebook': '479612**',
+    'email_twitter': '',
+    'senha_twitter': '',
+}
+
 LINKS = {
-    'google': f'https://www.google.com'
+    'base_facebook': 'https://www.facebook.com/',
 }
 
 PATH = {
     'arquivo_cache': os.getcwd() + '\cache',
 }
 
+CSS = {
+    'filtro': 'div[aria-label="Filtros"]',
+}
 XPATHS = {
-    'xpath': '/div/div//div/div[2]/div/div[2]/div[2]',
+    'form_login': '//form[@id="login_popup_cta_form"]',
+    'posts': '//*[@id="mount_0_0_YR"]/div/div[1]/div/div[3]/div/div/div/div[1]/div[1]/div/div/div[4]/div[2]/div/div[2]/div[2]/div',
+    'data_postagem': '/div/div/div/div/div/div/div/div/div/div/div[8]/div/div/div[2]/div/div[2]/div/div[2]/span/span/span[2]',
+    'url_postagem':  '/div/div/div/div/div/div/div/div/div/div/div[8]/div/div/div[2]/div/div[2]/div/div[2]/span/span/span[2]/span/a',
+    'texto_postagem': '/div/div/div/div/div/div/div/div/div/div/div[8]/div/div/div[3]/div/div/div/div/span',
 }

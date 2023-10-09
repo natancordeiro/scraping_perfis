@@ -29,7 +29,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
 
 # Importações Internas
-from utilitarios.funcoes_gerais import GeneralFuncs
+from utilitarios.funcoes_globais import GeneralFuncs
 
 class Navegador(webdriver.Chrome):
     """
