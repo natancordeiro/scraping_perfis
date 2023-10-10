@@ -22,8 +22,13 @@ from engine.navegador import Navegador
 from utilitarios.utilitarios import *
 
 class Automacao:
-    def raspar_facebook(self, url):
+    def raspar_facebook(self):
         """Função definida para raspar os dados de um perfil do Facebook."""
+
+        # Salvando o input do usuário
+        url = input("Insira o nome do usuário ou cole o link do perfil: ")
+
+        # Instanciando o Navegador
         self.navegador = Navegador(salvar_cache=PATH['arquivo_cache'], tela_cheia=True)
 
         # Verficia de o Input foi uma URL ou o nome do Usuário
@@ -40,20 +45,30 @@ class Automacao:
         self.navegador.esperar('css_selector', CSS['filtro'])
         sleep(1)
 
-        # Verificar se alguma data foi informadan(chamar função filtrar_data)
+        # Verificar se alguma data foi informada(chamar função filtrar_data)
 
+        # Enquanto tiver posts na tela, vai dar scroll
         while len(self.navegador.obter_elementos('XPATH', XPATHS['posts'])) != len(elementos_postagens):
             elementos_postagens = self.navegador.obter_elementos('XPATH', XPATHS['posts'])
             for div in elementos_postagens:
-                # Verificar se não tem class:
-                # Extrair dados
 
                 # data de postagem | URL | Texto
                 data_postagem = div.find_element(By.XPATH, XPATHS['data_postagem'])
                 url_postagem = div.find_element(By.XPATH, XPATHS['url_postagem'])
                 texto_postagem = div.find_element(By.XPATH, XPATHS['texto_postagem']).text
+                
+                # Verifica se tem imagem
+                if len(div.find_elements(By.XPATH, '//a//img')) >= 1:
+                    # Baixar imagens do post
+                    pass
 
-                # Salvar imagem ou vídeo
+                # Verifica se tem vídeo
+                if len(div.find_elements(By.XPATH, '//a[@aria-label="Ampliar"]')) >= 1:
+                    # Baixar vídeo do post
+                    pass
+            
+            self.navegador.rolar_para_elemento(elementos_postagens[-3])
+            sleep(0.5)
 
 
     

@@ -25,7 +25,7 @@ CSS = {
 }
 XPATHS = {
     'form_login': '//form[@id="login_popup_cta_form"]',
-    'posts': '//*[@id="mount_0_0_YR"]/div/div[1]/div/div[3]/div/div/div/div[1]/div[1]/div/div/div[4]/div[2]/div/div[2]/div[2]/div',
+    'posts': '/html/body/div[1]/div/div[1]/div/div[3]/div/div/div/div[1]/div[1]/div/div/div[4]/div[2]/div/div[2]/div[2]/div[not(@class) and div]',
     'data_postagem': '/div/div/div/div/div/div/div/div/div/div/div[8]/div/div/div[2]/div/div[2]/div/div[2]/span/span/span[2]',
     'url_postagem':  '/div/div/div/div/div/div/div/div/div/div/div[8]/div/div/div[2]/div/div[2]/div/div[2]/span/span/span[2]/span/a',
     'texto_postagem': '/div/div/div/div/div/div/div/div/div/div/div[8]/div/div/div[3]/div/div/div/div/span',
