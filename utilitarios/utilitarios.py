@@ -18,6 +18,7 @@ LINKS = {
 
 PATH = {
     'arquivo_cache': os.getcwd() + '\cache',
+    'arquivo_imagens': os.getcwd() + '\imgs',
 }
 
 CSS = {
