@@ -16,8 +16,10 @@ Este código está sujeito às políticas e regulamentos internos.
 # Importações do Python
 import requests
 import datetime
-from selenium.webdriver.common.by import By
+from openpyxl import Workbook, load_workbook
 from time import sleep
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 
 # Importações Internas
 from engine.navegador import Navegador
@@ -28,6 +30,7 @@ class Automacao:
         """Função definida para raspar os dados de um perfil do Facebook."""
 
         # Salvando o input do usuário
+        os.system('cls')
         url = input("Insira o nome do usuário ou cole o link do perfil: ")
         usuario_pesquisa = url.split("/")[-1].split("?")[0]
 
@@ -55,6 +58,7 @@ class Automacao:
         sleep(1)
 
         # Enquanto tiver posts na tela, vai dar scroll
+        elementos_postagens = []
         while len(self.navegador.obter_elementos('XPATH', XPATHS['posts'])) != len(elementos_postagens):
             elementos_postagens = self.navegador.obter_elementos('XPATH', XPATHS['posts'])
             for i, div in enumerate(elementos_postagens):
@@ -62,6 +66,7 @@ class Automacao:
                 # data de postagem | URL | Texto
                 url_postagem = div.find_element(By.XPATH, XPATHS['url_postagem']).get_attribute("href")
                 texto_postagem = div.find_element(By.XPATH, XPATHS['texto_postagem']).text
+
                 data = div.find_element(By.XPATH, XPATHS['data_postagem']).text
                 dia = data.split(" ")[0]
                 mes = self.converte_nome_mes(data.split(" ")[2])
@@ -70,24 +75,35 @@ class Automacao:
                 else:
                     ano = datetime.datetime.now().year
                 data_postagem = f"{dia}/{mes}/{ano}"
-                data_format = f"{dia}.{mes}.{ano}"
+                nome_arquivo = f"\{usuario_pesquisa}\{dia}.{mes}.{ano}"
                 
                 # Verifica se tem imagem
                 if len(div.find_elements(By.XPATH, '//a//img')) >= 1:
                     imagens = div.find_elements(By.XPATH, '//a//img')
-                    for index, img in enumerate(imagens):
-                        nome_arquivo = f"{usuario_pesquisa}\imagem_{data_format}_{i}_{index}.png"
-                        self.baixar_imagem(img.get_attribute("src"), nome_arquivo)
+                    for img in imagens:
+                        imagem_url = img.get_attribute("src")
+                        hora = str(datetime.datetime.now().hour) + str(datetime.datetime.now().minute) + str(datetime.datetime.now().second) + str(datetime.datetime.now().microsecond)
+                        self.baixar_conteudo(imagem_url,PATH['saida_facebook'] + nome_arquivo + f"\img\{hora}.png")
+                        nome_arquivos_imagens = f"{nome_arquivo}, "
 
                 # Verifica se tem vídeo
                 if len(div.find_elements(By.XPATH, '//a[@aria-label="Ampliar"]')) >= 1:
-                    # Baixar vídeo do post
-                    pass
-            
+                    video_url = self.obter_link_video(div)
+                    hora = str(datetime.datetime.now().hour) + str(datetime.datetime.now().minute) + str(datetime.datetime.now().second) + str(datetime.datetime.now().microsecond)
+                    self.baixar_conteudo(video_url, nome_arquivo + f"\movie\{hora}.mp4")
+                    nome_arquivos_video = f"{nome_arquivo}, "
+
+                # Salva os dados na planilha
+                self.adicionar_dados_excel(PATH['saida_facebook'] + nome_arquivo, 
+                                           data_postagem, 
+                                           url_postagem, 
+                                           texto_postagem, 
+                                           nome_arquivos_imagens, 
+                                           nome_arquivos_video
+                                           )
+
             self.navegador.rolar_para_elemento(elementos_postagens[-3])
             sleep(0.5)
-
-
     
         return True
 
@@ -105,13 +121,20 @@ class Automacao:
         
     def login_facebook(self, usuario=str, senha=str):
         """Faz login no Facebook."""
-        input_email = self.navegador.obter_elemento('NAME', 'email')
-        input_senha = self.navegador.obter_elemento('NAME', 'pass')
+        input_email = self.navegador.obter_elemento('XPATH', XPATHS['email'])
+        input_senha = self.navegador.obter_elemento('XPATH', XPATHS['senha'])
 
-    def filtrar_data(self):
-        pass
+        self.navegador.clicar_elemento(input_email)
+        self.navegador.enviar_teclas(CREDENCIAIS['email_facebook'], espera_entre_as_teclas=0.2)
+        self.navegador.espera_aleatoria(1, 2)
 
-    def baixar_imagem(self, link, nome_arquivo):
+        self.navegador.clicar_elemento(input_senha)
+        self.navegador.enviar_teclas(CREDENCIAIS['senha_facebook'])
+        self.navegador.espera_aleatoria(1, 2)
+
+        input_senha.send_keys(Keys.ENTER)
+
+    def baixar_conteudo(self, link, nome_arquivo):
         try:
             response = requests.get(link)
             if response.status_code == 200:
@@ -122,6 +145,21 @@ class Automacao:
                 print(f'Não foi possível baixar {nome_arquivo}. Status code: {response.status_code}')
         except Exception as e:
             print(f'Ocorreu um erro: {str(e)}')
+
+    def obter_link_video(self, elemento):
+        link = elemento.find_element(By.XPATH, '//a[@aria-label="Ampliar"]').get_attribute("href").replace("www", "mbasic")
+        self.navegador.switch_to.new_window()
+        self.navegador.navegar(link)
+        janela = self.navegador.id_janela_atual()
+        self.navegador.esperar('XPATH', '//a[@aria-label="Assistir ao vídeo"]')
+        video_url = 'https://mbasic.facebook.com' + self.navegador.obter_elemento('XPATH', '//a[@aria-label="Assistir ao vídeo"]').get_attribute("href")
+        self.navegador.navegar(video_url)
+        while self.navegador.url_atual() == video_url:
+            pass
+        url = self.navegador.url_atual()
+        self.navegador.mudar_foco(janela_padrao=True)
+        self.navegador.fechar_janela(janela)
+        return url
 
     def converte_nome_mes(self, nome_mes):
         meses = {
@@ -146,3 +184,14 @@ class Automacao:
         else:
             return None 
     
+    def adicionar_dados_excel(self, nome_planilha, data, url, texto, imagens, videos):
+        if not os.path.exists(nome_planilha):
+            wb = Workbook()
+            ws = wb.active
+            ws.append(["Data da Postagem", "URL da Postagem", "Texto da Postagem", "Nome dos Arquivos das Imagens", "Nome dos Arquivos dos Vídeos"])
+        else:
+            wb = load_workbook(nome_planilha)
+            ws = wb.active
+        
+        ws.append([data, url, texto, imagens, videos])
+        wb.save(nome_planilha)

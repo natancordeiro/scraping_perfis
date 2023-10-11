@@ -1,0 +1,3 @@
+[13272:6860:1011/130947.098:WARNING:chrome_main_delegate.cc(609)] This is Chrome version 117.0.5938.134 (not a warning)
+[13272:6860:1011/130947.177:INFO:policy_logger.cc(142)] :components\enterprise\browser\controller\chrome_browser_cloud_management_controller.cc(168) Starting CBCM Controller Initialization
+[13272:6860:1011/130947.177:INFO:policy_logger.cc(142)] :components\enterprise\browser\controller\chrome_browser_cloud_management_controller.cc(196) No machine level policy manager exists.
