@@ -67,6 +67,7 @@ class Automacao:
             sleep(2)
             self.navegador = Navegador(salvar_cache=PATH['arquivo_cache'], tela_cheia=True)
             self.login_facebook(CREDENCIAIS['email_facebook'], CREDENCIAIS['senha_facebook'])
+            sleep(3)
             self.navegador.encerrar_navegador()
             sleep(2)
             self.navegador = Navegador(somente_terminal=True, salvar_cache=PATH['arquivo_cache'], tela_cheia=True)
@@ -204,15 +205,18 @@ class Automacao:
         
     def login_facebook(self, usuario=str, senha=str):
         """Faz login no Facebook."""
+        self.navegador.navegar(LINKS['login_facebook'])
+        self.navegador.esperar('XPATH', XPATHS['email'])
+        self.navegador.esperar('XPATH', XPATHS['senha'])
         input_email = self.navegador.obter_elemento('XPATH', XPATHS['email'])
         input_senha = self.navegador.obter_elemento('XPATH', XPATHS['senha'])
 
         self.navegador.clicar_elemento(input_email)
-        self.navegador.enviar_teclas(CREDENCIAIS['email_facebook'], espera_entre_as_teclas=0.2)
+        self.navegador.enviar_teclas(usuario, espera_entre_as_teclas=0.2)
         self.navegador.espera_aleatoria(1, 2)
 
         self.navegador.clicar_elemento(input_senha)
-        self.navegador.enviar_teclas(CREDENCIAIS['senha_facebook'])
+        self.navegador.enviar_teclas(senha)
         self.navegador.espera_aleatoria(1, 2)
 
         input_senha.send_keys(Keys.ENTER)

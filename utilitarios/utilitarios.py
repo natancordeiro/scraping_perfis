@@ -6,12 +6,13 @@ O objetivo deste código é simplificar a legibilidade do código, visto que mui
 import os
 
 CREDENCIAIS = {
-    'email_facebook': 'rafaelamesmo@icloud.com',
-    'senha_facebook': '479612**'
+    'email_facebook': 'SEU_EMAIL_AQUI', # <- COLOQUE SEU E-MAIL DO FACEBOOK AQUI
+    'senha_facebook': 'SUA_SENHA_AQUI' # <- COLOQUE SUA SENHA DO FACEBOOK AQUI
 }
 
 LINKS = {
     'base_facebook': 'https://mbasic.facebook.com/',
+    'login_facebook': 'https://mbasic.facebook.com/login'
 }
 
 PATH = {
@@ -21,6 +22,6 @@ PATH = {
 
 XPATHS = {
     'ver_mais_stories': '//a[span[text()="Ver mais stories"]]',
-    'email': '//div/input[@name="email"]',
-    'senha': '//div/input[@name="pass"]',
+    'email': '//input[@name="email"]',
+    'senha': '//input[@name="pass"]',
 }
