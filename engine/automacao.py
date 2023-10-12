@@ -30,86 +30,169 @@ class Automacao:
         """Função definida para raspar os dados de um perfil do Facebook."""
 
         # Salvando o input do usuário
-        os.system('cls')
-        url = input("Insira o nome do usuário ou cole o link do perfil: ")
+        url = input("\033[34mInsira o nome do usuário ou cole o link do perfil: \033[0m")
         usuario_pesquisa = url.split("/")[-1].split("?")[0]
 
         # Verifica se deseja período
         filtrar_periodo = False
-        if input("Deseja informar período? [s/n]: ") == "S".upper().split():
-            período_inicio = "Informe o início do período que deseja filtrar - [DD/MM/YYYY]: "
-            período_final = "Informe o final do período que deseja filtrar - [DD/MM/YYYY]: "
+        inp = input("\033[34mDeseja informar período? [s/n]: \033[0m")
+        if  inp.upper().strip() == "S":
+            periodo_inicio = input("\033[34mInforme o início do período que deseja filtrar - [DD/MM/YYYY]: \033[0m")
+            periodo_final = input("\033[34mInforme o final do período que deseja filtrar - [DD/MM/YYYY]: \033[0m")
+            filtrar_periodo = True
+        sleep(0.5)
+        self.carregar()
+        os.system('cls')
+        self.carregar_iniciando()
 
         # Instanciando o Navegador
-        self.navegador = Navegador(salvar_cache=PATH['arquivo_cache'], tela_cheia=True)
+        self.navegador = Navegador(somente_terminal=True, salvar_cache=PATH['arquivo_cache'], tela_cheia=True)
+
+        # Validar path da url
+        if "?" in url:
+            url = url.split("?")[0]
 
         # Verficia de o Input foi uma URL ou o nome do Usuário
         if self.e_url(url):
-            self.navegador.navegar(url)
+            if "mbasic" not in url:
+                url = url.replace("web.", "mbasic.", 1).replace("www.", "mbasic.")
+            self.navegador.navegar(url + "?v=timeline")
         else: 
-            self.navegador.navegar(LINKS['base_facebook'] + usuario_pesquisa)
-        sleep(5)
+            self.navegador.navegar(LINKS['base_facebook'] + usuario_pesquisa + "?v=timeline")
+        sleep(3)
 
         # Verifica se o form login está na tela
-        if len(self.navegador.obter_elementos('XPATH', XPATHS['form_login'])) > 0:
+        if "login.php" in self.navegador.url_atual():
+            self.navegador.encerrar_navegador()
+            sleep(2)
+            self.navegador = Navegador(salvar_cache=PATH['arquivo_cache'], tela_cheia=True)
             self.login_facebook(CREDENCIAIS['email_facebook'], CREDENCIAIS['senha_facebook'])
+            self.navegador.encerrar_navegador()
+            sleep(2)
+            self.navegador = Navegador(somente_terminal=True, salvar_cache=PATH['arquivo_cache'], tela_cheia=True)
+            if self.e_url(url):
+                if "mbasic" not in url:
+                    url = url.replace("web.", "mbasic.", 1).replace("www.", "mbasic.")
+                self.navegador.navegar(url + "?v=timeline")
+            else: 
+                self.navegador.navegar(LINKS['base_facebook'] + usuario_pesquisa + "?v=timeline")
+            sleep(3)
 
-        self.navegador.esperar('css_selector', CSS['filtro'])
-        sleep(1)
+        self.navegador.esperar('tag_name', 'article')
+        self.navegador.esperar('xpath', XPATHS['ver_mais_stories'])
 
-        # Enquanto tiver posts na tela, vai dar scroll
-        elementos_postagens = []
-        while len(self.navegador.obter_elementos('XPATH', XPATHS['posts'])) != len(elementos_postagens):
-            elementos_postagens = self.navegador.obter_elementos('XPATH', XPATHS['posts'])
-            for i, div in enumerate(elementos_postagens):
+        loop = 1
+        print("Coletando dados do perfil:", usuario_pesquisa)
+        # Enquanto tiver btn ver_mais_stories, continua..
+        while True:
+            url_atual = self.navegador.url_atual()
+            data_atual = datetime.datetime.now().strftime("%d.%m.%Y")
+            elementos_postagens = self.navegador.obter_elementos('TAG_NAME', 'article')
+            for i, article in enumerate(elementos_postagens):
+                nome_arquivos_imagens = ""
+                nome_arquivos_video = ""
+                texto_postagem = ""
 
-                # data de postagem | URL | Texto
-                url_postagem = div.find_element(By.XPATH, XPATHS['url_postagem']).get_attribute("href")
-                texto_postagem = div.find_element(By.XPATH, XPATHS['texto_postagem']).text
+                self.navegador.esperar(By.XPATH, f'//article[{i+1}]//a[text()="História completa"]')
+                url_postagem = article.find_element(By.XPATH, f'//article[{i+1}]//a[text()="História completa"]').get_attribute("href").replace("mbasic", "web")
+                data = article.find_element(By.XPATH, f'//article[{i+1}]//abbr').text
+                try:
+                    texto_postagem = article.find_element(By.XPATH, f'//article[{i+1}]//p').text
+                except:
+                    texto_postagem = ""
 
-                data = div.find_element(By.XPATH, XPATHS['data_postagem']).text
-                dia = data.split(" ")[0]
-                mes = self.converte_nome_mes(data.split(" ")[2])
-                if data.split(" ")[-1].isdigit():
-                    ano = data.split(" ")[-1]
-                else:
+                dia = data.split(" ")[0].zfill(2)
+                mes = str(self.converte_nome_mes(data.split(" ")[2])).zfill(2)
+
+                if ":" in data.split(" ")[4]:
                     ano = datetime.datetime.now().year
+                else:
+                    ano = data.split(" ")[4]
                 data_postagem = f"{dia}/{mes}/{ano}"
-                nome_arquivo = f"\{usuario_pesquisa}\{dia}.{mes}.{ano}"
+
+                if filtrar_periodo:
+                    # Verifica se a data está dentro do período
+                    data_inicio = datetime.datetime.strptime(periodo_inicio, "%d/%m/%Y")
+                    data_verificar = datetime.datetime.strptime(data_postagem, "%d/%m/%Y")
+                    data_final = datetime.datetime.strptime(periodo_final, "%d/%m/%Y")
+
+                    if not data_inicio <= data_verificar <= data_final:
+                        continue
+
+                # Verifica se o arquivo de OUTPUT está criado
+                nome_arquivo = f"\{usuario_pesquisa}\{data_atual}"
+                if not os.path.exists(PATH['saida_facebook'] + f'\{usuario_pesquisa}'):
+                    os.mkdir(PATH['saida_facebook'] + f'\{usuario_pesquisa}')
+                if not os.path.exists(PATH['saida_facebook'] + f'\{nome_arquivo}'):
+                    os.mkdir(PATH['saida_facebook'] + f'\{nome_arquivo}')
                 
                 # Verifica se tem imagem
-                if len(div.find_elements(By.XPATH, '//a//img')) >= 1:
-                    imagens = div.find_elements(By.XPATH, '//a//img')
+                if len(article.find_elements(By.XPATH, f'//article[{i+1}]//a/img')) >= 1:
+                    imagens = article.find_elements(By.XPATH, f'//article[{i+1}]//a/img')
+                    print(f"Salvando Imagem do post #{i+1}. Página: {loop}")
                     for img in imagens:
-                        imagem_url = img.get_attribute("src")
+                        imagem_url = img.get_attribute("src").replace("mbasic", "web")
                         hora = str(datetime.datetime.now().hour) + str(datetime.datetime.now().minute) + str(datetime.datetime.now().second) + str(datetime.datetime.now().microsecond)
-                        self.baixar_conteudo(imagem_url,PATH['saida_facebook'] + nome_arquivo + f"\img\{hora}.png")
-                        nome_arquivos_imagens = f"{nome_arquivo}, "
-
+                        if not os.path.exists(PATH['saida_facebook'] + nome_arquivo + f"\img"):
+                            os.makedirs(PATH['saida_facebook'] + nome_arquivo + f"\img")
+                        self.baixar_conteudo(imagem_url, PATH['saida_facebook'] + nome_arquivo + f"\img\{hora}.png")
+                        nome_arquivos_imagens = nome_arquivos_imagens + nome_arquivo + f"\img\{hora}.png, "
+                
                 # Verifica se tem vídeo
-                if len(div.find_elements(By.XPATH, '//a[@aria-label="Ampliar"]')) >= 1:
-                    video_url = self.obter_link_video(div)
+                if len(article.find_elements(By.XPATH, f'//article[{i+1}]//a[@aria-label="Assistir ao vídeo"]')) > 0:
+                    print(f"Salvando Vídeo do post #{i+1}. Página: {loop}")
+                    video_url = article.find_element(By.XPATH, f'//article[{i+1}]//a[@aria-label="Assistir ao vídeo"]').get_attribute("href")
+
+                    janela = self.navegador.id_janela_atual()
+                    self.navegador.abrir_nova_janela()
+                    self.navegador.navegar(video_url)
+                    while self.navegador.url_atual() == video_url:
+                        pass
+                    url = self.navegador.url_atual()
+                    self.navegador.fechar_janela()
+                    self.navegador.mudar_janela(janela)
+
                     hora = str(datetime.datetime.now().hour) + str(datetime.datetime.now().minute) + str(datetime.datetime.now().second) + str(datetime.datetime.now().microsecond)
-                    self.baixar_conteudo(video_url, nome_arquivo + f"\movie\{hora}.mp4")
-                    nome_arquivos_video = f"{nome_arquivo}, "
+                    if not os.path.exists(PATH['saida_facebook'] + nome_arquivo + f"\movie"):
+                        os.makedirs(PATH['saida_facebook'] + nome_arquivo + f"\movie")
+                    self.baixar_conteudo(url, PATH['saida_facebook'] + nome_arquivo + f"\movie\{hora}.mp4")
+                    nome_arquivos_video = nome_arquivos_video + nome_arquivo + f"\movie\{hora}.mp4, "
 
                 # Salva os dados na planilha
-                self.adicionar_dados_excel(PATH['saida_facebook'] + nome_arquivo, 
+                self.adicionar_dados_excel(PATH['saida_facebook'] + nome_arquivo + f"\dados.xlsx",
                                            data_postagem, 
                                            url_postagem, 
                                            texto_postagem, 
                                            nome_arquivos_imagens, 
                                            nome_arquivos_video
                                            )
+            if len(self.navegador.obter_elementos('XPATH', XPATHS['ver_mais_stories'])) > 0:
+                self.navegador.esperar('XPATH', XPATHS['ver_mais_stories'])
+                proximo = self.navegador.obter_elemento('XPATH', XPATHS['ver_mais_stories']).get_attribute("href")
+                self.navegador.navegar(proximo)
+                while self.navegador.url_atual == url_atual:
+                    pass
+                self.navegador.esperar('tag_name', 'article')
+            else:
+                print("Salvando dados no Excel.")
+                sleep(1)
+                print("Scraping realizado com sucesso!")
+                break
+            loop += 1
 
-            self.navegador.rolar_para_elemento(elementos_postagens[-3])
-            sleep(0.5)
-    
-        return True
+    def carregar(self):
+        chars = "/—\|" 
+        for _ in range(2):
+            for char in chars:
+                print(f"\033[34m\rProcessando {char}\033[0m", end="")
+                sleep(0.1)
 
-    def raspar_twitter(self):
-        """Função definida para raspar os dados de um perfil do Facebook."""
-        pass
+    def carregar_iniciando(self):
+        chars = ['.', '..', '...']
+        for _ in range(2):
+            for char in chars:
+                print(f"\033[34m\rIniciando Raspagem {char}\033[0m", end="")
+                sleep(0.3)
 
     def e_url(self, texto=str):
         """Verifica se a string é um Link de URL."""
@@ -140,26 +223,10 @@ class Automacao:
             if response.status_code == 200:
                 with open(nome_arquivo, 'wb') as arquivo:
                     arquivo.write(response.content)
-                print(f'{nome_arquivo} baixado com sucesso.')
             else:
-                print(f'Não foi possível baixar {nome_arquivo}. Status code: {response.status_code}')
+                print(f'Erro. Status code: {response.status_code}')
         except Exception as e:
             print(f'Ocorreu um erro: {str(e)}')
-
-    def obter_link_video(self, elemento):
-        link = elemento.find_element(By.XPATH, '//a[@aria-label="Ampliar"]').get_attribute("href").replace("www", "mbasic")
-        self.navegador.switch_to.new_window()
-        self.navegador.navegar(link)
-        janela = self.navegador.id_janela_atual()
-        self.navegador.esperar('XPATH', '//a[@aria-label="Assistir ao vídeo"]')
-        video_url = 'https://mbasic.facebook.com' + self.navegador.obter_elemento('XPATH', '//a[@aria-label="Assistir ao vídeo"]').get_attribute("href")
-        self.navegador.navegar(video_url)
-        while self.navegador.url_atual() == video_url:
-            pass
-        url = self.navegador.url_atual()
-        self.navegador.mudar_foco(janela_padrao=True)
-        self.navegador.fechar_janela(janela)
-        return url
 
     def converte_nome_mes(self, nome_mes):
         meses = {

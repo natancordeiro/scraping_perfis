@@ -13,23 +13,16 @@ CREDENCIAIS = {
 }
 
 LINKS = {
-    'base_facebook': 'https://www.facebook.com/',
+    'base_facebook': 'https://mbasic.facebook.com/',
 }
 
 PATH = {
     'arquivo_cache': os.getcwd() + '\cache',
-    'saida_facebook': os.getcwd() + '\\resultados\\facebook',
+    'saida_facebook': os.getcwd() + '\\resultados',
     }
 
-CSS = {
-    'filtro': 'div[aria-label="Filtros"]',
-}
 XPATHS = {
-    'form_login': '//form[@id="login_popup_cta_form"]',
-    'posts': '/html/body/div[1]/div/div[1]/div/div[3]/div/div/div/div[1]/div[1]/div/div/div[4]/div[2]/div/div[2]/div[2]/div[not(@class) and div]',
-    'data_postagem': './div/div/div/div/div/div/div/div/div/div/div[8]/div/div/div[2]/div/div[2]/div/div[2]/span/span/span[2]',
-    'url_postagem':  './div/div/div/div/div/div/div/div/div/div/div[8]/div/div/div[2]/div/div[2]/div/div[2]/span/span/span[2]/span/a[@href]',
-    'texto_postagem': './div/div/div/div/div/div/div/div/div/div/div[8]/div/div/div[3]/div/div/div/div/span',
+    'ver_mais_stories': '//a[span[text()="Ver mais stories"]]',
     'email': '//div/input[@name="email"]',
     'senha': '//div/input[@name="pass"]',
 }

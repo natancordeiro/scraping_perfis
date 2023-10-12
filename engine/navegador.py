@@ -103,38 +103,38 @@ class Navegador(webdriver.Chrome):
 
     def navegar(self, url):
         """Navega para uma página da web."""
-        self.driver.get(url)
+        return self.driver.get(url)
 
     def avancar(self):
         """Avança par aa navegação a frente."""
-        self.driver.forward(self)
+        return self.driver.forward(self)
     
     def voltar(self):
         """Volta a sessão anterior de navegação."""
-        self.driver.back(self)
+        return self.driver.back(self)
 
     def abrir_nova_janela(self):
         """Abre uma nova aba no navegador."""
-        self.driver.switch_to.new_window()
+        return self.driver.switch_to.new_window()
 
     def atualizar(self):
-        self.driver.refresh()
+        return self.driver.refresh()
 
     def fechar_janela(self):
         """fecha a janela."""
-        self.driver.close()
+        return self.driver.close()
     
     def encerrar_navegador(self):
         """Encerra a sessão do navegador."""
-        self.driver.quit()
+        return self.driver.quit()
 
     def url_atual(self):
         """Retorna a URL atual."""
-        self.driver.current_url
+        return self.driver.current_url
     
     def id_janela_atual(self):
         """Retorna o número do identificador da janela atual."""
-        self.driver.current_window_handle
+        return self.driver.current_window_handle
     
     def deletar_cookies(self, todos=False):
         """
@@ -358,7 +358,7 @@ class Navegador(webdriver.Chrome):
         elif largura != None and altura != None:
             return self.driver.set_window_size(largura, altura, janela)
     
-    def mudar_foco(self, id_frame, janela_padrao=False, alerta=False):
+    def mudar_foco(self, id_frame=False, janela_padrao=False, alerta=False):
         """
         Muda o foco do navegador para algum objeto específico.
         
