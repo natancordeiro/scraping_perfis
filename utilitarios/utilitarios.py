@@ -7,9 +7,7 @@ import os
 
 CREDENCIAIS = {
     'email_facebook': 'rafaelamesmo@icloud.com',
-    'senha_facebook': '479612**',
-    'email_twitter': '',
-    'senha_twitter': '',
+    'senha_facebook': '479612**'
 }
 
 LINKS = {
