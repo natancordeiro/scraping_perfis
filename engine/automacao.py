@@ -15,7 +15,7 @@ Este código está sujeito às políticas e regulamentos internos.
 
 # Importações do Python
 import requests
-import datetime
+from datetime import datetime, timedelta
 from openpyxl import Workbook, load_workbook
 from time import sleep
 from selenium.webdriver.common.by import By
@@ -31,7 +31,7 @@ class Automacao:
 
         # Salvando o input do usuário
         url = input("\033[34mInsira o nome do usuário ou cole o link do perfil: \033[0m")
-        usuario_pesquisa = url.split("/")[-1].split("?")[0]
+        usuario_pesquisa = [i for i in url.split("/") if i.strip()][-1]
 
         # Verifica se deseja período
         filtrar_periodo = False
@@ -83,11 +83,12 @@ class Automacao:
         self.navegador.esperar('xpath', XPATHS['ver_mais_stories'])
 
         loop = 1
+        parar = 0
         print("Coletando dados do perfil:", usuario_pesquisa)
         # Enquanto tiver btn ver_mais_stories, continua..
         while True:
             url_atual = self.navegador.url_atual()
-            data_atual = datetime.datetime.now().strftime("%d.%m.%Y")
+            data_atual = datetime.now().strftime("%d.%m.%Y")
             elementos_postagens = self.navegador.obter_elementos('TAG_NAME', 'article')
             for i, article in enumerate(elementos_postagens):
                 nome_arquivos_imagens = ""
@@ -102,23 +103,35 @@ class Automacao:
                 except:
                     texto_postagem = ""
 
-                dia = data.split(" ")[0].zfill(2)
-                mes = str(self.converte_nome_mes(data.split(" ")[2])).zfill(2)
+                if data[-1].strip().lower() == 'm' or data[-1].strip().lower() == 'h':
+                    data_postagem = datetime.now().strftime("%d/%m/%Y")
 
-                if ":" in data.split(" ")[4]:
-                    ano = datetime.datetime.now().year
+                elif data.split(" ")[0].strip().lower() == 'ontem':
+                    data_postagem = datetime.now() - timedelta(days=dias)
+
+                elif data[-1].strip().lower() == 'd':
+                    # Dias atrás
+                    dias = data[0]
+                    data_postagem = datetime.now() - timedelta(days=dias)
                 else:
-                    ano = data.split(" ")[4]
-                data_postagem = f"{dia}/{mes}/{ano}"
+                    dia = data.split(" ")[0].zfill(2)
+                    mes = str(self.converte_nome_mes(data.split(" ")[2])).zfill(2)
+
+                    if ":" in data.split(" ")[4]:
+                        ano = datetime.now().year
+                    else:
+                        ano = data.split(" ")[4]
+                    data_postagem = f"{dia}/{mes}/{ano}"
 
                 if filtrar_periodo:
                     # Verifica se a data está dentro do período
-                    data_inicio = datetime.datetime.strptime(periodo_inicio, "%d/%m/%Y")
-                    data_verificar = datetime.datetime.strptime(data_postagem, "%d/%m/%Y")
-                    data_final = datetime.datetime.strptime(periodo_final, "%d/%m/%Y")
+                    data_inicio = datetime.strptime(periodo_inicio, "%d/%m/%Y")
+                    data_verificar = datetime.strptime(data_postagem, "%d/%m/%Y")
+                    data_final = datetime.strptime(periodo_final, "%d/%m/%Y")
 
                     if not data_inicio <= data_verificar <= data_final:
-                        continue
+                        parar = 1
+                        break
 
                 # Verifica se o arquivo de OUTPUT está criado
                 nome_arquivo = f"\{usuario_pesquisa}\{data_atual}"
@@ -133,7 +146,7 @@ class Automacao:
                     print(f"Salvando Imagem do post #{i+1}. Página: {loop}")
                     for img in imagens:
                         imagem_url = img.get_attribute("src").replace("mbasic", "web")
-                        hora = str(datetime.datetime.now().hour) + str(datetime.datetime.now().minute) + str(datetime.datetime.now().second) + str(datetime.datetime.now().microsecond)
+                        hora = str(datetime.now().hour) + str(datetime.now().minute) + str(datetime.now().second) + str(datetime.now().microsecond)
                         if not os.path.exists(PATH['saida_facebook'] + nome_arquivo + f"\img"):
                             os.makedirs(PATH['saida_facebook'] + nome_arquivo + f"\img")
                         self.baixar_conteudo(imagem_url, PATH['saida_facebook'] + nome_arquivo + f"\img\{hora}.png")
@@ -153,13 +166,14 @@ class Automacao:
                     self.navegador.fechar_janela()
                     self.navegador.mudar_janela(janela)
 
-                    hora = str(datetime.datetime.now().hour) + str(datetime.datetime.now().minute) + str(datetime.datetime.now().second) + str(datetime.datetime.now().microsecond)
+                    hora = str(datetime.now().hour) + str(datetime.now().minute) + str(datetime.now().second) + str(datetime.now().microsecond)
                     if not os.path.exists(PATH['saida_facebook'] + nome_arquivo + f"\movie"):
                         os.makedirs(PATH['saida_facebook'] + nome_arquivo + f"\movie")
                     self.baixar_conteudo(url, PATH['saida_facebook'] + nome_arquivo + f"\movie\{hora}.mp4")
                     nome_arquivos_video = nome_arquivos_video + nome_arquivo + f"\movie\{hora}.mp4, "
 
                 # Salva os dados na planilha
+                print(f"Gravando dados do post #{i+1}. Página: {loop}")
                 self.adicionar_dados_excel(PATH['saida_facebook'] + nome_arquivo + f"\dados.xlsx",
                                            data_postagem, 
                                            url_postagem, 
@@ -167,6 +181,11 @@ class Automacao:
                                            nome_arquivos_imagens, 
                                            nome_arquivos_video
                                            )
+            if parar == 1:
+                print("Salvando dados no Excel.")
+                sleep(1)
+                print("Scraping realizado com sucesso!")
+                break
             if len(self.navegador.obter_elementos('XPATH', XPATHS['ver_mais_stories'])) > 0:
                 self.navegador.esperar('XPATH', XPATHS['ver_mais_stories'])
                 proximo = self.navegador.obter_elemento('XPATH', XPATHS['ver_mais_stories']).get_attribute("href")
